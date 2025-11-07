@@ -1,13 +1,14 @@
 import { z } from "zod";
-
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { clerkClient } from "./utils/clerk";
+import { createTRPCRouter, publicProcedure, protectedProcedure } from "~/server/api/trpc";
 import { posts } from "~/server/db/schema";
 
 export const workflowRouter = createTRPCRouter({
-  run: publicProcedure
+  run: protectedProcedure
     .input(z.object({ name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      
+      const clerkUser = await clerkClient.users.getUser(ctx.userId);
+
       await ctx.db.insert(posts).values({
         name: input.name,
       });
@@ -19,5 +20,16 @@ export const workflowRouter = createTRPCRouter({
     });
 
     return post ?? null;
+  }),
+  getEvents: protectedProcedure.query(async ({ ctx }) => {
+    // const events = await ctx.db.query.events.findMany({
+    //   orderBy: [
+    //     {
+    //       createdAt: "desc",
+    //     },
+    //   ],
+    // });
+
+    return [];
   }),
 });

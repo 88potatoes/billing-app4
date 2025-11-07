@@ -19,9 +19,5 @@ export async function getCalendarEvents(
   };
 
   const response = await calendar.events.list(params);
-
-  console.log(`Successfully read events from calendar "${calendarId}".`);
-  console.log(`Found ${response.data.items?.length || 0} events.`);
-
   return response.data;
 }
