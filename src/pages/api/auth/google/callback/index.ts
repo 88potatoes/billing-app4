@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { google } from "googleapis";
 import { getAuth } from "@clerk/nextjs/server";
-import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "~/server/db";
 import { users, oauthTokens } from "~/server/db/schema";
 import { eq, and } from "drizzle-orm";
+import { clerkClient } from "~/server/utils/clerk";
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,8 +16,12 @@ export default async function handler(
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  // 2. Get authorization code from query params
+  const user = await clerkClient.users.getUser(userId);
   const { code, state, error } = req.query;
+
+  if (user.privateMetadata.googleCalendarOAuthState !== state) {
+    return res.status(401).json({ error: "Something went wrong. Please try again." });
+  }
 
   if (error) {
     return res.redirect(`/settings?error=${error}`);
@@ -64,9 +68,7 @@ export default async function handler(
         .set({
           refreshToken: tokens.refresh_token,
           accessToken: tokens.access_token,
-          expiresAt: tokens.expiry_date
-            ? new Date(tokens.expiry_date)
-            : null,
+          expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
           scope: tokens.scope,
           updatedAt: new Date(),
         })
@@ -83,9 +85,9 @@ export default async function handler(
     }
 
     // 6. Redirect to success page
-    return res.redirect("/settings?success=google_connected");
+    return res.redirect("/?success=google_connected");
   } catch (err) {
     console.error("OAuth callback error:", err);
-    return res.redirect("/settings?error=oauth_failed");
+    return res.redirect("/?error=oauth_failed");
   }
 }

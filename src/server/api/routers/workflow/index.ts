@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { clerkClient } from "./utils/clerk";
 import { createTRPCRouter, publicProcedure, protectedProcedure } from "~/server/api/trpc";
 import { posts } from "~/server/db/schema";
+import { clerkClient } from "~/server/utils/clerk";
 
 export const workflowRouter = createTRPCRouter({
   run: protectedProcedure
