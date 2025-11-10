@@ -1,4 +1,5 @@
 import { z } from "zod";
+import YAML from 'yaml'
 import {
   createTRPCRouter,
   publicProcedure,
@@ -9,6 +10,12 @@ import { clerkClient } from "~/server/utils/clerk";
 import { getCalendarEvents } from "./utils/getCalendarEvents";
 import { getOauthClient } from "./utils/OAuthClient";
 import { eq } from "drizzle-orm";
+
+type InvoiceType = {
+  Cost: string;
+  Amount: number;
+  Rate: number;
+}
 
 export const workflowRouter = createTRPCRouter({
   run: protectedProcedure
@@ -52,6 +59,13 @@ export const workflowRouter = createTRPCRouter({
       timeMinUTC: "2025-06-01T00:00:00Z",
       timeMaxUTC: "2025-06-30T00:00:00Z",
     });
+
+    // events?.items?.reduce((acc, event) => {
+    //   console.log(event.description)
+    //   const a = YAML.parse(event.description ?? '')       
+    //   console.log(a)
+    //   return [...acc];
+    // }, []);
 
     return events;
   }),

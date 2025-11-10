@@ -65,7 +65,7 @@ export default function Home() {
       {events?.items?.map((event) => (
         <div key={event.id} className="border rounded-lg p-4">
           <h3>{event.summary}</h3>
-          <p>{event.start.dateTime}</p>
+          <p>{event.start?.dateTime}</p>
         </div>
       ))}
     </>
