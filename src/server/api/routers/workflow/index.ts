@@ -1,7 +1,14 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure, protectedProcedure } from "~/server/api/trpc";
-import { posts } from "~/server/db/schema";
+import {
+  createTRPCRouter,
+  publicProcedure,
+  protectedProcedure,
+} from "~/server/api/trpc";
+import { oauthTokens, posts, users } from "~/server/db/schema";
 import { clerkClient } from "~/server/utils/clerk";
+import { getCalendarEvents } from "./utils/getCalendarEvents";
+import { getOauthClient } from "./utils/OAuthClient";
+import { eq } from "drizzle-orm";
 
 export const workflowRouter = createTRPCRouter({
   run: protectedProcedure
@@ -22,14 +29,30 @@ export const workflowRouter = createTRPCRouter({
     return post ?? null;
   }),
   getEvents: protectedProcedure.query(async ({ ctx }) => {
-    // const events = await ctx.db.query.events.findMany({
-    //   orderBy: [
-    //     {
-    //       createdAt: "desc",
-    //     },
-    //   ],
-    // });
+    const user = await ctx.db.query.users.findFirst({
+      where: eq(users.clerkId, ctx.userId),
+    });
+    if (!user) {
+      throw new Error("User not found");
+    }
 
-    return [];
+    const refreshToken = await ctx.db.query.oauthTokens.findFirst({
+      where: eq(oauthTokens.userId, user.id),
+    });
+    if (!refreshToken) {
+      throw new Error("Refresh token not found");
+    }
+
+    const oAuthClient = await getOauthClient({
+      refreshToken: refreshToken.refreshToken,
+    });
+    const events = await getCalendarEvents({
+      oauth2Client: oAuthClient,
+      calendarId: "primary",
+      timeMinUTC: "2025-06-01T00:00:00Z",
+      timeMaxUTC: "2025-06-30T00:00:00Z",
+    });
+
+    return events;
   }),
 });
