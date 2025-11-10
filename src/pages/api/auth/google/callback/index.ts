@@ -24,7 +24,7 @@ export default async function handler(
   }
 
   if (error) {
-    return res.redirect(`/settings?error=${error}`);
+    return res.status(400).json({ error: "Something went wrong. Please try again." });
   }
 
   if (!code || typeof code !== "string") {
