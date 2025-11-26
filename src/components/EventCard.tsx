@@ -20,6 +20,19 @@ export const EventCard = ({ event }: Props) => {
   const duration =
     startTime && endTime ? differenceInMinutes(endTime, startTime) : null;
 
+  // Parse description JSON
+  let descriptionData: Record<string, unknown> | Record<string, unknown>[] | null = null;
+  if (event.description) {
+    try {
+      descriptionData = JSON.parse(event.description);
+    } catch {
+      // If parsing fails, we'll just show the raw description
+    }
+  }
+
+  // Check if descriptionData is an array
+  const isArray = Array.isArray(descriptionData);
+
   return (
     <Card>
       <CardHeader>
@@ -37,14 +50,44 @@ export const EventCard = ({ event }: Props) => {
                   : ""}
             </div>
           )}
-          <div>{event?.description}</div>
         </CardDescription>
       </CardHeader>
-      {event.location && (
-        <CardContent>
-          <p className="text-muted-foreground text-sm">📍 {event.location}</p>
-        </CardContent>
-      )}
+      <CardContent className="space-y-2">
+        {descriptionData ? (
+          isArray ? (
+            // Render array of items
+            <div className="space-y-2">
+              {descriptionData.map((item, index) => (
+                <div key={index} className="rounded-md bg-muted p-3 text-sm">
+                  {Object.entries(item).map(([key, value]) => (
+                    <div key={key} className="flex justify-between py-1">
+                      <span className="font-medium capitalize">{key}:</span>
+                      <span className="text-muted-foreground">{String(value)}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Render single object
+            <div className="rounded-md bg-muted p-3 text-sm">
+              {Object.entries(descriptionData).map(([key, value]) => (
+                <div key={key} className="flex justify-between py-1">
+                  <span className="font-medium capitalize">{key}:</span>
+                  <span className="text-muted-foreground">{String(value)}</span>
+                </div>
+              ))}
+            </div>
+          )
+        ) : (
+          event.description && (
+            <p className="text-sm text-muted-foreground">{event.description}</p>
+          )
+        )}
+        {event.location && (
+          <p className="text-sm text-muted-foreground">📍 {event.location}</p>
+        )}
+      </CardContent>
     </Card>
   );
 };

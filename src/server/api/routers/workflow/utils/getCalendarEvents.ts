@@ -45,6 +45,8 @@ export async function getCalendarEvents(input: {
           return false;
         }
 
+        console.log(jsonOutput);
+
         return {
           ...event,
           description: JSON.stringify(normalizeItemData(jsonOutput)),

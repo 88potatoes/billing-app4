@@ -23,12 +23,12 @@ export default function Home() {
     from: new Date(2025, 10, 23),
     to: new Date(2025, 10, 30),
   });
-  
+
   const { data: events } = api.workflow.getEvents.useQuery(
     dateRange?.from && dateRange?.to
       ? { startDate: dateRange.from, endDate: dateRange.to }
       : undefined,
-    { enabled: !!dateRange?.from && !!dateRange?.to }
+    { enabled: !!dateRange?.from && !!dateRange?.to },
   );
 
   return (
@@ -76,21 +76,32 @@ export default function Home() {
 
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Events</h2>
-          {events?.items && events.items.length > 0 ? (
-            <div className="grid gap-4">
-              {events.items.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
+          <div className="flex gap-4 w-full">
+            <div className="flex-1">
+              {events?.items && events.items.length > 0 ? (
+                <div className="grid gap-4">
+                  {events.items.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-muted-foreground text-center">
+                      No events found for the selected date range.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-          ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">
-                  No events found for the selected date range.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+            <Button
+              onClick={() => {
+                console.log("generate invoices");
+              }}
+            >
+              Generate Invoices
+            </Button>
+          </div>
         </div>
       </main>
     </>
