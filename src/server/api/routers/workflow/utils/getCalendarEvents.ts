@@ -26,24 +26,33 @@ export async function getCalendarEvents(input: {
 
   const events = allEvents
     .filter((event) => {
-      return !!event.description;
-    })
-    .filter((event) => {
-      return !!event.start?.dateTime;
+      return !!event.description && !!event.start?.dateTime;
     })
     .map((event) => {
       const $ = cheerio.load(event.description ?? "");
-      let jsonOutput = undefined;
+      const olElement = $("ol").first();
+
+      // Check if <ol> actually exists
+      if (olElement.length === 0) {
+        return false; // No HTML list found
+      }
+
       try {
-        jsonOutput = parseList($("ol").first(), $);
+        const jsonOutput = parseList(olElement, $);
+
+        // Check if parsing produced valid output
+        if (!jsonOutput || jsonOutput === null) {
+          return false;
+        }
+
         return {
           ...event,
           description: JSON.stringify(normalizeItemData(jsonOutput)),
         };
       } catch (e) {
-        return event;
+        return false;
       }
-    });
+    }).filter(Boolean) as calendar_v3.Schema$Events["items"];
 
   return {
     ...response.data,
