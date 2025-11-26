@@ -1,4 +1,6 @@
 import { google, calendar_v3, Auth } from "googleapis";
+import * as cheerio from 'cheerio';
+import { parseList } from "./parseList";
 
 export async function getCalendarEvents(input: {
   oauth2Client: Auth.OAuth2Client;
@@ -22,12 +24,30 @@ export async function getCalendarEvents(input: {
   const response = await calendar.events.list(params);
   const allEvents = response.data.items || [];
 
-  const regularEvents = allEvents.filter(event => {
+  const eventsWithDescriptions = allEvents.filter(event => {
+    return !!event.description;
+  });
+
+  const regularEvents = eventsWithDescriptions.filter(event => {
     return !!event.start?.dateTime;
+  });
+
+  const descriptionAlteredEvents = regularEvents.map(event => {
+    const $ = cheerio.load(event.description ?? '');
+    let jsonOutput = undefined;
+    try {
+      jsonOutput = JSON.stringify(parseList($('ol').first(), $));
+      return {
+        ...event,
+        description: jsonOutput,
+      }
+    } catch (e) {
+      return event;
+    }
   });
 
   return {
     ...response.data,
-    items: regularEvents,
+    items: descriptionAlteredEvents,
   };
 }
