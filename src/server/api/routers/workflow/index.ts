@@ -35,7 +35,9 @@ export const workflowRouter = createTRPCRouter({
 
     return post ?? null;
   }),
-  getEvents: protectedProcedure.query(async ({ ctx }) => {
+  getEvents: protectedProcedure
+    .input(z.object({ startDate: z.date(), endDate: z.date() }))
+    .query(async ({ ctx, input }) => {
     const user = await ctx.db.query.users.findFirst({
       where: eq(users.clerkId, ctx.userId),
     });
@@ -53,11 +55,12 @@ export const workflowRouter = createTRPCRouter({
     const oAuthClient = await getOauthClient({
       refreshToken: refreshToken.refreshToken,
     });
+
     const events = await getCalendarEvents({
       oauth2Client: oAuthClient,
       calendarId: "primary",
-      timeMinUTC: "2025-06-01T00:00:00Z",
-      timeMaxUTC: "2025-06-30T00:00:00Z",
+      timeMinUTC: input.startDate.toISOString(),
+      timeMaxUTC: input.endDate.toISOString(),
     });
 
     // events?.items?.reduce((acc, event) => {

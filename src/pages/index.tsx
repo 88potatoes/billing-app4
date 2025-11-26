@@ -17,12 +17,17 @@ export default function Home() {
   const { mutate: authWithGoogleCalendar } =
     api.user.authWithGoogleCalendar.useMutation();
 
-  const { data: events } = api.workflow.getEvents.useQuery();
-
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2025, 5, 12),
     to: new Date(2025, 6, 15),
   });
+  
+  const { data: events } = api.workflow.getEvents.useQuery(
+    dateRange?.from && dateRange?.to
+      ? { startDate: dateRange.from, endDate: dateRange.to }
+      : undefined,
+    { enabled: !!dateRange?.from && !!dateRange?.to }
+  );
 
   return (
     <>
