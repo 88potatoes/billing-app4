@@ -18,6 +18,16 @@ export async function getCalendarEvents(input: {
     orderBy: "startTime",
   };
 
+
   const response = await calendar.events.list(params);
-  return response.data;
+  const allEvents = response.data.items || [];
+
+  const regularEvents = allEvents.filter(event => {
+    return !!event.start?.dateTime;
+  });
+
+  return {
+    ...response.data,
+    items: regularEvents,
+  };
 }
