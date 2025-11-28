@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 
 import { api } from "~/utils/api";
+import { Layout } from "~/components/Layout";
 
 import "~/styles/globals.css";
 
@@ -14,7 +15,9 @@ const MyApp: AppType = ({ Component, pageProps }) => {
   return (
     <ClerkProvider>
       <div className={geist.className}>
-        <Component {...pageProps} />
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
       </div>
     </ClerkProvider>
   );
