@@ -33,6 +33,8 @@ export default function Home() {
     { enabled: !!dateRange?.from && !!dateRange?.to },
   );
 
+  console.log('events', events);
+
   return (
     <>
       <Head>
@@ -108,6 +110,7 @@ export default function Home() {
                   customerInfo: {
                     name: "Eric Lang",
                     email: "eric@ericlang.dev",
+                    specifiedId: events?.items?.[0]?.customer?.specifiedId ?? "",
                   },
                   items: items ?? [],
                 });

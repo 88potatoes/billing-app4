@@ -10,8 +10,6 @@ export async function getCalendarEvents(input: {
   timeMinUTC: string;
   timeMaxUTC: string;
 }): Promise<calendar_v3.Schema$Events | undefined> {
-  await input.oauth2Client.getAccessToken();
-
   const calendar = google.calendar({ version: "v3", auth: input.oauth2Client });
 
   const params: calendar_v3.Params$Resource$Events$List = {

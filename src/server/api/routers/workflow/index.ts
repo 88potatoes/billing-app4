@@ -5,13 +5,14 @@ import {
   publicProcedure,
   protectedProcedure,
 } from "~/server/api/trpc";
-import { oauthTokens, posts, users } from "~/server/db/schema";
+import { oauthTokens, posts, users, patients } from "~/server/db/schema";
 import { clerkClient } from "~/server/utils/clerk";
 import { getCalendarEvents } from "./utils/getCalendarEvents";
 import { getOauthClient } from "./utils/OAuthClient";
 import { eq } from "drizzle-orm";
 import { mutateCopyGoogleSheetToDrive } from "./utils/mutateCopyGoogleSheetToDrive";
 import { executeCellUpdates } from "./utils/executeCellUpdates";
+import { findOrCreatePatient } from "./utils/db/findOrCreatePatient";
 
 type InvoiceType = {
   Cost: string;
@@ -59,6 +60,25 @@ export const workflowRouter = createTRPCRouter({
         timeMaxUTC: input.endDate.toISOString(),
       });
 
+      console.log("events", events);
+
+      const finalizedEvents = {
+        ...events,
+        items: await Promise.all(
+          events.items?.map(async (event) => ({
+            ...event,
+            customer: await ctx.db.query.patients.findFirst({
+              where: eq(
+                patients.specifiedId,
+                JSON.parse(event.description).customerInfo.specifiedId ?? "",
+              ),
+            }),
+          })),
+        ),
+      };
+
+      console.log("finalizedEvents", finalizedEvents);
+
       // events?.items?.reduce((acc, event) => {
       //   console.log(event.description)
       //   const a = YAML.parse(event.description ?? '')
@@ -66,7 +86,16 @@ export const workflowRouter = createTRPCRouter({
       //   return [...acc];
       // }, []);
 
-      return events;
+      return finalizedEvents;
+    }),
+
+  getPatientBySpecifiedId: protectedProcedure
+    .input(z.object({ specifiedId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const patient = await ctx.db.query.patient.findFirst({
+        where: eq(patient.specifiedId, input),
+      });
+      return patient;
     }),
 
   createInvoices: protectedProcedure
@@ -77,6 +106,7 @@ export const workflowRouter = createTRPCRouter({
         customerInfo: z.object({
           name: z.string(),
           email: z.string(),
+          specifiedId: z.string(),
         }),
         items: z.array(
           z.object({
@@ -100,34 +130,43 @@ export const workflowRouter = createTRPCRouter({
         refreshToken: refreshToken.refreshToken,
       });
 
+      const patient = await findOrCreatePatient(
+        ctx.db,
+        input.customerInfo.specifiedId,
+        "1kX3TlJq3AukyyIX27Vn08Jciqb7bTTSdmeC3uAmAZFQ"
+      );
+
       const newSpreadsheet = await mutateCopyGoogleSheetToDrive(
         oAuthClient,
-        "1kX3TlJq3AukyyIX27Vn08Jciqb7bTTSdmeC3uAmAZFQ",
+        patient.googleSheetId,
         input.desinationFolderId,
         "filename",
       );
 
-      const allCellUpdates = input.items.map((item, idx) => [{
-        cell: `${input.sheetName}!B${idx + 18}`,
-        value: item.name,
-      },
-      {
-        cell: `${input.sheetName}!H${idx + 18}`,
-        value: 'Work',
-      },
-      {
-        cell: `${input.sheetName}!I${idx + 18}`,
-        value: item.qty,
-      },
-      {
-        cell: `${input.sheetName}!J${idx + 18}`,
-        value: item.cost,
-      },
-      {
-        cell: `${input.sheetName}!L${idx + 18}`,
-        value: item.total,
-      }
-      ]).flat();
+      const allCellUpdates = input.items
+        .map((item, idx) => [
+          {
+            cell: `${input.sheetName}!B${idx + 18}`,
+            value: item.name,
+          },
+          {
+            cell: `${input.sheetName}!H${idx + 18}`,
+            value: "Work",
+          },
+          {
+            cell: `${input.sheetName}!I${idx + 18}`,
+            value: item.qty,
+          },
+          {
+            cell: `${input.sheetName}!J${idx + 18}`,
+            value: item.cost,
+          },
+          {
+            cell: `${input.sheetName}!L${idx + 18}`,
+            value: item.total,
+          },
+        ])
+        .flat();
 
       await executeCellUpdates(oAuthClient, newSpreadsheet.id, allCellUpdates);
 

@@ -15,11 +15,11 @@ type Props = {
 // Type guard to check if data is billing format
 function isBillingData(
   data: unknown
-): data is { billingInfo: Record<string, unknown>; items: unknown[] } {
+): data is { customerInfo: Record<string, unknown>; items: unknown[] } {
   return (
     typeof data === "object" &&
     data !== null &&
-    "billingInfo" in data &&
+    "customerInfo" in data &&
     "items" in data
   );
 }
@@ -46,6 +46,8 @@ export const EventCard = ({ event }: Props) => {
   const isBillingFormat = isBillingData(descriptionData);
   const isArray = Array.isArray(descriptionData);
 
+ console.log(event); 
+
   return (
     <Card>
       <CardHeader>
@@ -63,18 +65,21 @@ export const EventCard = ({ event }: Props) => {
                   : ""}
             </div>
           )}
+          <a href={event.htmlLink} target="_invoiceWindow" rel="noreferrer">
+            link
+          </a>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {descriptionData ? (
           isBillingFormat ? (
-            // Render billing format with billingInfo and items
+            // Render billing format with customerInfo and items
             <>
-              {/* Billing Info Section */}
+              {/* Customer Info Section */}
               <div>
-                <h3 className="mb-2 text-sm font-semibold">Billing Information</h3>
+                <h3 className="mb-2 text-sm font-semibold">Customer Information</h3>
                 <div className="rounded-md bg-muted p-3 text-sm">
-                  {Object.entries(descriptionData.billingInfo).map(([key, value]) => (
+                  {Object.entries(descriptionData.customerInfo).map(([key, value]) => (
                     <div key={key} className="flex justify-between py-1">
                       <span className="font-medium capitalize">{key}:</span>
                       <span className="text-muted-foreground">{String(value)}</span>

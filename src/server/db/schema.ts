@@ -66,6 +66,17 @@ export const oauthTokens = createTable(
 );
 export type OAuthToken = InferSelectModel<typeof oauthTokens>;
 
+export const patients = createTable(
+  "patient",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    specifiedId: d.varchar({ length: 256 }),
+    googleSheetId: d.varchar({ length: 256 }),
+  }),
+  (t) => [index("patient_specified_id_idx").on(t.specifiedId)],
+);
+export type Patient = InferSelectModel<typeof patient>;
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   oauthTokens: many(oauthTokens),

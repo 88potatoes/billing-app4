@@ -2,7 +2,7 @@ import * as cheerio from "cheerio";
 import { parseList } from "./parseList";
 import { normalizeItemData } from "./normalizeItemData";
 
-export interface BillingInfo {
+export interface CustomerInfo {
   name: string;
   email: string;
   id: string;
@@ -10,34 +10,34 @@ export interface BillingInfo {
 }
 
 export interface BillingData {
-  billingInfo: BillingInfo;
+  customerInfo: CustomerInfo;
   items: ReturnType<typeof normalizeItemData>;
 }
 
 /**
  * Parses the billing format HTML which contains:
- * - A billing info section (ul) with Name, Email, Id
+ * - A customer info section (ul) with Name, Email, Id
  * - An items section (ol) with nested item details
  */
 export function parseBillingFormat(html: string): BillingData | null {
   const $ = cheerio.load(html);
 
-  // Extract billing info from first <ul>
-  const $billingUl = $("ul").first();
+  // Extract customer info from first <ul>
+  const $customerUl = $("ul").first();
 
-  if ($billingUl.length === 0) {
-    console.error("No <ul> found for billing info");
+  if ($customerUl.length === 0) {
+    console.error("No <ul> found for customer info");
     return null;
   }
 
-  const billingInfoRaw: Record<string, string> = {};
+  const customerInfoRaw: Record<string, string> = {};
 
-  $billingUl.find("> li").each((_, li) => {
+  $customerUl.find("> li").each((_, li) => {
     const text = $(li).text().trim();
     // Parse key-value pairs like "Name: Jabez"
     const match = text.match(/^([A-Za-z]+):\s*(.*)$/);
     if (match && match[1] && match[2]) {
-      billingInfoRaw[match[1].toLowerCase()] = match[2].trim();
+      customerInfoRaw[match[1].toLowerCase()] = match[2].trim();
     }
   });
 
@@ -53,11 +53,11 @@ export function parseBillingFormat(html: string): BillingData | null {
   const items = normalizeItemData(rawItems);
 
   return {
-    billingInfo: {
-      name: billingInfoRaw.name ?? "",
-      email: billingInfoRaw.email ?? "",
-      id: billingInfoRaw.id ?? "",
-      ...billingInfoRaw, // Include any additional fields
+    customerInfo: {
+      name: customerInfoRaw.name ?? "",
+      email: customerInfoRaw.email ?? "",
+      id: customerInfoRaw.id ?? "",
+      ...customerInfoRaw, // Include any additional fields
     },
     items,
   };
