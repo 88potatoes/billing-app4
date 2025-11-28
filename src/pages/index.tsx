@@ -19,6 +19,9 @@ export default function Home() {
   const { mutate: authWithGoogleCalendar } =
     api.user.authWithGoogleCalendar.useMutation();
 
+  const { mutate: createInvoices } =
+    api.workflow.createInvoices.useMutation();
+
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2025, 10, 23),
     to: new Date(2025, 10, 30),
@@ -96,7 +99,21 @@ export default function Home() {
             </div>
             <Button
               onClick={() => {
-                console.log("generate invoices");
+                createInvoices({
+                  desinationFolderId: "1KpOPpP8pldl9fybkwLYitb4sHtDb_-iu",
+                  billingInfo: {
+                    name: "Eric Lang",
+                    email: "eric@ericlang.dev",
+                  },
+                  items: [
+                    {
+                      name: "Test",
+                      cost: "100",
+                      quantity: "1",
+                      total: "100",
+                    },
+                  ],
+                });
               }}
             >
               Generate Invoices

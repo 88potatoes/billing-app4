@@ -55,6 +55,11 @@ export function normalizeItemData(
             // Clean the cost string by removing currency symbols and commas
             value = String(rawValue).replace(/[^0-9.]/g, "");
             break;
+          case "total":
+            key = "total";
+            // Clean the total string by removing currency symbols and commas
+            value = String(rawValue).replace(/[^0-9.]/g, "");
+            break;
           case "qty":
             key = "qty";
             // Convert Quantity to a number

@@ -2,6 +2,7 @@ import { google, calendar_v3, Auth } from "googleapis";
 import * as cheerio from "cheerio";
 import { parseList } from "./parseList";
 import { normalizeItemData } from "./normalizeItemData";
+import { parseBillingFormat } from "./parseBillingFormat";
 
 export async function getCalendarEvents(input: {
   oauth2Client: Auth.OAuth2Client;
@@ -29,7 +30,31 @@ export async function getCalendarEvents(input: {
       return !!event.description && !!event.start?.dateTime;
     })
     .map((event) => {
-      const $ = cheerio.load(event.description ?? "");
+      console.log('===event', event);
+
+      const description = event.description ?? "";
+
+      // Check if this is the billing format
+      if (description.includes("START BILLING")) {
+        try {
+          const billingData = parseBillingFormat(description);
+
+          if (!billingData) {
+            return false;
+          }
+
+          return {
+            ...event,
+            description: JSON.stringify(billingData),
+          };
+        } catch (e) {
+          console.error("Error parsing billing format:", e);
+          return false;
+        }
+      }
+
+      // Otherwise, use the original simple format parser
+      const $ = cheerio.load(description);
       const olElement = $("ol").first();
 
       // Check if <ol> actually exists

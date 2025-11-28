@@ -12,6 +12,18 @@ type Props = {
   event: calendar_v3.Schema$Event;
 };
 
+// Type guard to check if data is billing format
+function isBillingData(
+  data: unknown
+): data is { billingInfo: Record<string, unknown>; items: unknown[] } {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "billingInfo" in data &&
+    "items" in data
+  );
+}
+
 export const EventCard = ({ event }: Props) => {
   const startTime = event.start?.dateTime
     ? new Date(event.start.dateTime)
@@ -30,7 +42,8 @@ export const EventCard = ({ event }: Props) => {
     }
   }
 
-  // Check if descriptionData is an array
+  // Check if this is billing format data
+  const isBillingFormat = isBillingData(descriptionData);
   const isArray = Array.isArray(descriptionData);
 
   return (
@@ -52,10 +65,43 @@ export const EventCard = ({ event }: Props) => {
           )}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-4">
         {descriptionData ? (
-          isArray ? (
-            // Render array of items
+          isBillingFormat ? (
+            // Render billing format with billingInfo and items
+            <>
+              {/* Billing Info Section */}
+              <div>
+                <h3 className="mb-2 text-sm font-semibold">Billing Information</h3>
+                <div className="rounded-md bg-muted p-3 text-sm">
+                  {Object.entries(descriptionData.billingInfo).map(([key, value]) => (
+                    <div key={key} className="flex justify-between py-1">
+                      <span className="font-medium capitalize">{key}:</span>
+                      <span className="text-muted-foreground">{String(value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Items Section */}
+              <div>
+                <h3 className="mb-2 text-sm font-semibold">Items</h3>
+                <div className="space-y-2">
+                  {descriptionData.items.map((item, index) => (
+                    <div key={index} className="rounded-md bg-muted p-3 text-sm">
+                      {Object.entries(item as Record<string, unknown>).map(([key, value]) => (
+                        <div key={key} className="flex justify-between py-1">
+                          <span className="font-medium capitalize">{key}:</span>
+                          <span className="text-muted-foreground">{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : isArray ? (
+            // Render array of items (simple format)
             <div className="space-y-2">
               {descriptionData.map((item, index) => (
                 <div key={index} className="rounded-md bg-muted p-3 text-sm">
@@ -69,7 +115,7 @@ export const EventCard = ({ event }: Props) => {
               ))}
             </div>
           ) : (
-            // Render single object
+            // Render single object (simple format)
             <div className="rounded-md bg-muted p-3 text-sm">
               {Object.entries(descriptionData).map(([key, value]) => (
                 <div key={key} className="flex justify-between py-1">
