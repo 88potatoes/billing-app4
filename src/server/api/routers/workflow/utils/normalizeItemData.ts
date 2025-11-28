@@ -63,7 +63,7 @@ export function normalizeItemData(
           case "qty":
             key = "qty";
             // Convert Quantity to a number
-            value = parseInt(String(rawValue), 10);
+            value = String(rawValue);
             // Check if the conversion resulted in a valid number
             if (isNaN(value)) {
               console.warn(

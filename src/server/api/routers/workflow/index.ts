@@ -11,6 +11,7 @@ import { getCalendarEvents } from "./utils/getCalendarEvents";
 import { getOauthClient } from "./utils/OAuthClient";
 import { eq } from "drizzle-orm";
 import { mutateCopyGoogleSheetToDrive } from "./utils/mutateCopyGoogleSheetToDrive";
+import { executeCellUpdates } from "./utils/executeCellUpdates";
 
 type InvoiceType = {
   Cost: string;
@@ -39,16 +40,10 @@ export const workflowRouter = createTRPCRouter({
   getEvents: protectedProcedure
     .input(z.object({ startDate: z.date(), endDate: z.date() }))
     .query(async ({ ctx, input }) => {
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.clerkId, ctx.userId),
-      });
-      if (!user) {
-        throw new Error("User not found");
-      }
-
       const refreshToken = await ctx.db.query.oauthTokens.findFirst({
-        where: eq(oauthTokens.userId, user.id),
+        where: eq(oauthTokens.userId, ctx.user.id),
       });
+
       if (!refreshToken) {
         throw new Error("Refresh token not found");
       }
@@ -75,31 +70,27 @@ export const workflowRouter = createTRPCRouter({
     }),
 
   createInvoices: protectedProcedure
-    .input(z.object({ desinationFolderId: z.string(),
-      billingInfo: z.object({
-        name: z.string(),
-        email: z.string(),
-      }),
-    items: z.array(
+    .input(
       z.object({
-        name: z.string(),
-        cost: z.string(),
-        quantity: z.string(),
-        total: z.string(),
+        desinationFolderId: z.string(),
+        sheetName: z.string(),
+        customerInfo: z.object({
+          name: z.string(),
+          email: z.string(),
+        }),
+        items: z.array(
+          z.object({
+            name: z.string(),
+            cost: z.string(),
+            qty: z.string(),
+            total: z.string(),
+          }),
+        ),
       }),
-    ),
-  }))
+    )
     .mutation(async ({ ctx, input }) => {
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.clerkId, ctx.userId),
-      });
-
-      if (!user) {
-        throw new Error("User not found");
-      }
-
       const refreshToken = await ctx.db.query.oauthTokens.findFirst({
-        where: eq(oauthTokens.userId, user.id),
+        where: eq(oauthTokens.userId, ctx.user.id),
       });
       if (!refreshToken) {
         throw new Error("Refresh token not found");
@@ -109,12 +100,36 @@ export const workflowRouter = createTRPCRouter({
         refreshToken: refreshToken.refreshToken,
       });
 
-      const driveFile = mutateCopyGoogleSheetToDrive(
+      const newSpreadsheet = await mutateCopyGoogleSheetToDrive(
         oAuthClient,
         "1kX3TlJq3AukyyIX27Vn08Jciqb7bTTSdmeC3uAmAZFQ",
         input.desinationFolderId,
         "filename",
       );
+
+      const allCellUpdates = input.items.map((item, idx) => [{
+        cell: `${input.sheetName}!B${idx + 18}`,
+        value: item.name,
+      },
+      {
+        cell: `${input.sheetName}!H${idx + 18}`,
+        value: 'Work',
+      },
+      {
+        cell: `${input.sheetName}!I${idx + 18}`,
+        value: item.qty,
+      },
+      {
+        cell: `${input.sheetName}!J${idx + 18}`,
+        value: item.cost,
+      },
+      {
+        cell: `${input.sheetName}!L${idx + 18}`,
+        value: item.total,
+      }
+      ]).flat();
+
+      await executeCellUpdates(oAuthClient, newSpreadsheet.id, allCellUpdates);
 
       return {
         success: true,

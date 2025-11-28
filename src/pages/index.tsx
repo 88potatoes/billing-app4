@@ -19,8 +19,7 @@ export default function Home() {
   const { mutate: authWithGoogleCalendar } =
     api.user.authWithGoogleCalendar.useMutation();
 
-  const { mutate: createInvoices } =
-    api.workflow.createInvoices.useMutation();
+  const { mutate: createInvoices } = api.workflow.createInvoices.useMutation();
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2025, 10, 23),
@@ -79,7 +78,7 @@ export default function Home() {
 
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Events</h2>
-          <div className="flex gap-4 w-full">
+          <div className="flex w-full gap-4">
             <div className="flex-1">
               {events?.items && events.items.length > 0 ? (
                 <div className="grid gap-4">
@@ -99,20 +98,18 @@ export default function Home() {
             </div>
             <Button
               onClick={() => {
+                const items = JSON.parse(
+                  events?.items?.[0]?.description ?? "",
+                ).items;
+
                 createInvoices({
                   desinationFolderId: "1KpOPpP8pldl9fybkwLYitb4sHtDb_-iu",
-                  billingInfo: {
+                  sheetName: "Invoice",
+                  customerInfo: {
                     name: "Eric Lang",
                     email: "eric@ericlang.dev",
                   },
-                  items: [
-                    {
-                      name: "Test",
-                      cost: "100",
-                      quantity: "1",
-                      total: "100",
-                    },
-                  ],
+                  items: items ?? [],
                 });
               }}
             >

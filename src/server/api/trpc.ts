@@ -178,7 +178,7 @@ export const protectedProcedure = t.procedure
       ctx: {
         ...ctx,
         userId: ctx.userId, // Narrow the type to non-nullable
-        dbUser, // User record from database
+        user: dbUser, // User record from database
       },
     });
   });
